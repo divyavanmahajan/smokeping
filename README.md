@@ -10,7 +10,8 @@
 * Ping-only mode (to only collect data using Smokeping without the Apache service)
 * Automatically download the latest Smokeping at startup of the container. (This can be disabled with NO_UPDATE=1).
 * Slave mode - to run Smokeping in Slave mode 
-* Patch for Smokeping running in a container to use a relative URL for the Filter function.
+* Patches - Allow Smokeping web UI running in a container to use a relative URL for the Filter function.
+* Patches - TCPPing script starts tcptraceroute with sudo.
 
 For more information on using this image - please see [divyavanmahajan/smokeping](https://github.com/divyavanmahajan/docker-smokeping)
 
