@@ -1,0 +1,65 @@
+#!/usr/bin/with-contenv bash
+
+
+# Slave mode
+
+if [[ $MASTER_URL ]];  then
+  echo Switch to slave and turn off master
+  rm -rf /etc/services.d/smokeping
+else
+  echo Switch to master and turn off slave.
+  rm -rf /etc/services.d/smokeping-slave
+fi
+
+# If NO_UPDATE is set, then the update script is not executed.
+# This is useful for images with no access to download or which already have the latest version
+if [[ ${NO_UPDATE} ]] ; then
+        echo Skipping update since NO_UPDATE=${NO_UPDATE} is set.
+else
+        echo Updating Smokeping
+        # Update Smokeping - verified till version 2.6.0
+        curl -L -o /tmp/smokeping.zip https://github.com/oetiker/SmokePing/archive/master.zip \
+        &&  cd /tmp \
+        &&  unzip -o smokeping.zip \
+        &&  cp -Rv /tmp/SmokePing-master/htdocs/css /usr/share/webapps/smokeping/ \
+        &&  cp -Rv /tmp/SmokePing-master/htdocs/js /usr/share/webapps/smokeping/ \
+        &&  cp /tmp/SmokePing-master/etc/basepage.html.dist /etc/smokeping/basepage.html \
+        &&  cp /tmp/SmokePing-master/bin/smokeping /usr/bin \
+        &&  cp /tmp/SmokePing-master/bin/smokeping_cgi /usr/bin \
+        &&  cp /tmp/SmokePing-master/bin/smokeinfo /usr/bin \
+        &&  cp /tmp/SmokePing-master/lib/*.pm /usr/share/perl5/vendor_perl/ \
+        &&  cp -Rv /tmp/SmokePing-master/lib/Smokeping/* /usr/share/perl5/vendor_perl/Smokeping \
+        &&  echo Fix URL for Filter - when running in a container \
+	&&  patch /usr/share/perl5/vendor_perl/Smokeping.pm /patch/patch_smokeping_cgi \
+        &&  chmod ug+s /usr/bin/tcpping \
+        &&  echo Update completed successfully
+fi
+
+# If NO_PING is set, only the web server is run in the container
+if [[ ${NO_PING} ]] ; then
+        echo -----
+        echo NO_PING=$NO_PING
+        echo Container will not start Smokeping for ping tests
+        rm -rf /etc/services.d/smokeping
+        echo -----
+fi
+
+# If NO_WEB is set, only the web server is run in the container
+if [[ ${NO_WEB} ]] ; then
+        echo -----
+        echo Container will not start HTTP server
+        echo NO_WEB=$NO_WEB
+        rm -rf /etc/services.d/apache
+        echo -----
+fi
+
+
+# Setup Cache volume mount - required if you want to run NO_PING and NO_WEB separately.
+# That requires a shared cache volume
+
+rm /var/www/localhost/smokeping/cache
+rm -rf /var/cache/smokeping
+ln -sf /cache /var/www/localhost/smokeping/cache
+ln -sf /cache /var/cache/smokeping
+chown -R abc:abc /cache
+

@@ -1,0 +1,11 @@
+--- Smokeping.pm1
++++ Smokeping.pm
+@@ -1594,7 +1594,7 @@
+ sub hierarchy_switcher($$){
+     my $q = shift;
+     my $cfg = shift;
+-    my $print =$q->start_form(-name=>'hswitch',-method=>'get',-action=>$cfg->{General}{cgiurl});
++    my $print =$q->start_form(-name=>'hswitch',-method=>'get',-action=>'smokeping.cgi');
+     if ($cfg->{Presentation}{hierarchies}){
+             $print .= "<div class=\"hierarchy\">";
+             $print .= "<label for=\"hierarchy\" class=\"hierarchy-label\">Hierarchy:</label>";

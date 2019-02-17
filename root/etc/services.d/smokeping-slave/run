@@ -1,0 +1,35 @@
+#!/usr/bin/with-contenv bash
+
+
+if [[ $MASTER_URL ]]
+then
+	echo Starting in Slave mode
+	# Create Smokeping slave_secret configuration file
+	mkdir -p /slave
+	echo $SLAVE_SECRET> /slave/slave_secret
+	chmod o-rwx /slave/slave_secret
+	chown abc /slave/slave_secret
+	# Run tcptraceroute as root
+	chmod a+s /usr/bin/tcptraceroute
+	# Show the environment - visible with docker logs 
+	echo -- Environment --
+	  env
+	  echo ------------------
+	  echo -- Slave Secret --
+	  cat /slave/slave_secret
+	  echo -----------------
+
+
+	# Enable debugging log information
+	if [ -n $DEBUGLOG ]
+	then
+	  echo --- Adjusting for extra debug logging ---
+	  sed -i 's/my .use_debuglog;/my \$use_debuglog=1;/g' /usr/share/perl5/vendor_perl/Smokeping.pm
+	  # Add log message to show data sent to server
+	  grep 'Sending to server:'  /usr/share/perl5/vendor_perl/Smokeping/Slave.pm || sed -i '75iSmokeping::do_debuglog("Sending to server:\\n$data_dump");' /usr/share/perl5/vendor_perl/Smokeping/Slave.pm
+	fi
+	echo --- Starting ---
+	echo exec s6-setuidgid abc   /usr/bin/smokeping --master-url=$MASTER_URL --cache-dir=/tmp --shared-secret=/slave/slave_secret --nodaemon
+	exec s6-setuidgid abc   /usr/bin/smokeping --master-url=$MASTER_URL --cache-dir=/tmp --shared-secret=/slave/slave_secret --nodaemon
+fi
+
