@@ -1,5 +1,7 @@
 
-# Smokeping - Extends Linuxserver.io Smokeping
+# Smokeping - Monitoring network - An extension to Linuxserver.io Smokeping
+
+[![smokeping](https://camo.githubusercontent.com/e0694ef783e3fd1d74e6776b28822ced01c7cc17/687474703a2f2f6f73732e6f6574696b65722e63682f736d6f6b6570696e672f696e632f736d6f6b6570696e672d6c6f676f2e706e67)](https://oss.oetiker.ch/smokeping/)
 
 [Smokeping](https://oss.oetiker.ch/smokeping/) keeps track of your network latency. For a full example of what this application is capable of visit [UCDavis](http://smokeping.ucdavis.edu/cgi-bin/smokeping.fcgi). The [LinuxServer.io](https://linuxserver.io) Smokeping docker image is great. However it uses APT to install Smokeping. This is not the most recent version of Smokeping. So I've extended the base Linuxservice image with instructions to download the latest Smokeping and install it over the default Smokeping.
 
@@ -8,13 +10,9 @@
 * Ping-only mode (to only collect data using Smokeping without the Apache service)
 * Automatically download the latest Smokeping at startup of the container. (This can be disabled with NO_UPDATE=1).
 * Slave mode - to run Smokeping in Slave mode 
+* Patch for Smokeping running in a container to use a relative URL for the Filter function.
 
-For more information on using this image - please see
-
-# [divyavanmahajan/smokeping](https://github.com/divyavanmahajan/docker-smokeping)
-
-
-[![smokeping](https://camo.githubusercontent.com/e0694ef783e3fd1d74e6776b28822ced01c7cc17/687474703a2f2f6f73732e6f6574696b65722e63682f736d6f6b6570696e672f696e632f736d6f6b6570696e672d6c6f676f2e706e67)](https://oss.oetiker.ch/smokeping/)
+For more information on using this image - please see [divyavanmahajan/smokeping](https://github.com/divyavanmahajan/docker-smokeping)
 
 ## Usage
 
@@ -46,6 +44,48 @@ docker create \
   --restart unless-stopped \
   divyavanmahajan/smokeping
 ```
+
+## Parameters
+
+Container images are configured using parameters passed at runtime (such as those above). These parameters are separated by a colon and indicate `<external>:<internal>` respectively. For example, `-p 8080:80` would expose port `80` from inside the container to be accessible from the host's IP on port `8080` outside the container.
+
+| Parameter | Function |
+| :----: | --- |
+| `-p 80` | Allows HTTP access to the internal webserver. |
+| `-e PUID=1001` | for UserID - see below for explanation |
+| `-e PGID=1001` | for GroupID - see below for explanation |
+| `-e TZ=Europe/London` | Specify a timezone to use EG Europe/London |
+| `-e NO_UPDATE=1` | Do not run the smokeping update when the container starts. This is useful if the container cannot access the Internet.|
+| `-e NO_WEB=1`  | Only start the Smokeping part without the HTTP server. This will collect the data but will not display it.|
+| `-e NO_PING=1` | Only start the Apache HTTP server and do not ping. For this to work, this container must share the data and config folders with a NO_WEB=1 container.|
+| `-e SLAVE_SECRET=123` | SLAVE mode required: The secret shared key in your Slaves config file.|
+| `-e MASTER_URL=http://master:3333/smokeping/smokeping.cgi`| SLAVE mode required: URL to contact the main server for the config file|
+| `-h container_hostname` | SLAVE mode required: Give your container the hostname it will use to contact the master server. This hostname is used in the Slaves configuration.|
+| `-v /config` | Configure the `Targets` file here |
+| `-v /data` | Storage location for db and application data (graphs etc) |
+| `-v /cache` | Storage location for the cache images etc) |
+
+## User / Group Identifiers
+
+When using volumes (`-v` flags) permissions issues can arise between the host OS and the container, we avoid this issue by allowing you to specify the user `PUID` and group `PGID`.
+
+Ensure any volume directories on the host are owned by the same user you specify and any permissions issues will vanish like magic.
+
+In this instance `PUID=1001` and `PGID=1001`, to find yours use `id user` as below:
+
+```
+  $ id username
+    uid=1001(dockeruser) gid=1001(dockergroup) groups=1001(dockergroup)
+```
+
+&nbsp;
+## Application Setup
+
+- Once running the URL will be `http://<host-ip>/`.
+- Basics are, edit the `Targets` file to ping the hosts you're interested in to match the format found there.
+- Wait 10 minutes.
+
+## More examples
 
 ### docker master and slave
 ```
@@ -119,9 +159,7 @@ docker create \
   divyavanmahajan/smokeping
 
 ```
-### docker-compose
-
-Compatible with docker-compose v2 schemas.
+### docker-compose - standalone example
 
 ```
 ---
@@ -142,47 +180,6 @@ services:
       - 80:80
     restart: unless-stopped
 ```
-
-## Parameters
-
-Container images are configured using parameters passed at runtime (such as those above). These parameters are separated by a colon and indicate `<external>:<internal>` respectively. For example, `-p 8080:80` would expose port `80` from inside the container to be accessible from the host's IP on port `8080` outside the container.
-
-| Parameter | Function |
-| :----: | --- |
-| `-p 80` | Allows HTTP access to the internal webserver. |
-| `-e PUID=1001` | for UserID - see below for explanation |
-| `-e PGID=1001` | for GroupID - see below for explanation |
-| `-e TZ=Europe/London` | Specify a timezone to use EG Europe/London |
-| `-e NO_UPDATE=1` | Do not run the smokeping update when the container starts. This is useful if the container cannot access the Internet.|
-| `-e NO_WEB=1`  | Only start the Smokeping part without the HTTP server. This will collect the data but will not display it.|
-| `-e NO_PING=1` | Only start the Apache HTTP server and do not ping. For this to work, this container must share the data and config folders with a NO_WEB=1 container.|
-| `-e SLAVE_SECRET=123 | SLAVE mode required: The secret shared key in your Slaves config file.|
-| `-e MASTER_URL=http://master:3333/smokeping/smokeping.cgi| SLAVE mode required: URL to contact the main server for the config file|
-| `-h container_hostname` | SLAVE mode required: Give your container the hostname it will use to contact the master server. This hostname is used in the Slaves configuration.|
-| `-v /config` | Configure the `Targets` file here |
-| `-v /data` | Storage location for db and application data (graphs etc) |
-| `-v /cache` | Storage location for the cache images etc) |
-
-## User / Group Identifiers
-
-When using volumes (`-v` flags) permissions issues can arise between the host OS and the container, we avoid this issue by allowing you to specify the user `PUID` and group `PGID`.
-
-Ensure any volume directories on the host are owned by the same user you specify and any permissions issues will vanish like magic.
-
-In this instance `PUID=1001` and `PGID=1001`, to find yours use `id user` as below:
-
-```
-  $ id username
-    uid=1001(dockeruser) gid=1001(dockergroup) groups=1001(dockergroup)
-```
-
-&nbsp;
-## Application Setup
-
-- Once running the URL will be `http://<host-ip>/`.
-- Basics are, edit the `Targets` file to ping the hosts you're interested in to match the format found there.
-- Wait 10 minutes.
-
 
 ## Support Info 
 
